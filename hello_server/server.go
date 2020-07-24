@@ -1,24 +1,40 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
 
-	"../hellopb"
+	"github.com/fenriz07/grpc-boilerplate/hellopb"
 	"google.golang.org/grpc"
 )
 
-type server struct {
+type server struct{}
+
+func (*server) Hello(cxt context.Context, req *hellopb.HelloRequest) (*hellopb.HelloResponse, error) {
+	fmt.Println("Hello function was called with %v \n", req)
+
+	firstName := req.GetHello().GetFirstName()
+	prefix := req.GetHello().GetPrefix()
+
+	customHello := "Bienvenido " + prefix + " " + firstName
+
+	res := &hellopb.HelloResponse{
+		CustomHello: customHello,
+	}
+
+	return res, nil
+
 }
 
 func main() {
-	fmt.Println("Hello go server is running")
+	fmt.Println("Iniciando el server go")
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 
 	if err != nil {
-		log.Fatalf("Error %v", err)
+		log.Fatal(err.Error())
 	}
 
 	s := grpc.NewServer()
@@ -28,5 +44,4 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatal(err.Error())
 	}
-
 }
