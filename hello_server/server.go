@@ -6,11 +6,13 @@ import (
 	"log"
 	"net"
 
-	"github.com/fenriz07/grpc-boilerplate/hellopb"
+	"github.com/fenriz07/grpc-boilerplate/hello_server/hellopb"
 	"google.golang.org/grpc"
 )
 
-type server struct{}
+type server struct {
+	hellopb.UnimplementedHelloServiceServer
+}
 
 func (*server) Hello(cxt context.Context, req *hellopb.HelloRequest) (*hellopb.HelloResponse, error) {
 	fmt.Println("Hello function was called with %v \n", req)
