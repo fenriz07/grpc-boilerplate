@@ -17,6 +17,21 @@ message HelloResponse{
     string custom_hello = 1;
 }
 
+
+message HelloManyLanguagesRequest{ 
+    Hello hello = 1;
+}
+
+message HelloManyLanguagesResponse{
+    string hello_language = 1;
+}
+
+
 service HelloService{
+    //Unary
     rpc Hello (HelloRequest) returns (HelloResponse);
+
+    //Server streaming
+    //The service return hello/greeting in diferent languages
+    rpc HelloManyLanguages(HelloManyLanguagesRequest) returns (stream HelloManyLanguagesResponse);
 }

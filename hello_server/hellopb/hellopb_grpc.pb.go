@@ -17,7 +17,11 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HelloServiceClient interface {
+	//Unary
 	Hello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
+	//Server streaming
+	//The service return hello/greeting in diferent languages
+	HelloManyLanguages(ctx context.Context, in *HelloManyLanguagesRequest, opts ...grpc.CallOption) (HelloService_HelloManyLanguagesClient, error)
 }
 
 type helloServiceClient struct {
@@ -37,11 +41,47 @@ func (c *helloServiceClient) Hello(ctx context.Context, in *HelloRequest, opts .
 	return out, nil
 }
 
+func (c *helloServiceClient) HelloManyLanguages(ctx context.Context, in *HelloManyLanguagesRequest, opts ...grpc.CallOption) (HelloService_HelloManyLanguagesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_HelloService_serviceDesc.Streams[0], "/hellopb.HelloService/HelloManyLanguages", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &helloServiceHelloManyLanguagesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type HelloService_HelloManyLanguagesClient interface {
+	Recv() (*HelloManyLanguagesResponse, error)
+	grpc.ClientStream
+}
+
+type helloServiceHelloManyLanguagesClient struct {
+	grpc.ClientStream
+}
+
+func (x *helloServiceHelloManyLanguagesClient) Recv() (*HelloManyLanguagesResponse, error) {
+	m := new(HelloManyLanguagesResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // HelloServiceServer is the server API for HelloService service.
 // All implementations must embed UnimplementedHelloServiceServer
 // for forward compatibility
 type HelloServiceServer interface {
+	//Unary
 	Hello(context.Context, *HelloRequest) (*HelloResponse, error)
+	//Server streaming
+	//The service return hello/greeting in diferent languages
+	HelloManyLanguages(*HelloManyLanguagesRequest, HelloService_HelloManyLanguagesServer) error
 	mustEmbedUnimplementedHelloServiceServer()
 }
 
@@ -51,6 +91,9 @@ type UnimplementedHelloServiceServer struct {
 
 func (*UnimplementedHelloServiceServer) Hello(context.Context, *HelloRequest) (*HelloResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Hello not implemented")
+}
+func (*UnimplementedHelloServiceServer) HelloManyLanguages(*HelloManyLanguagesRequest, HelloService_HelloManyLanguagesServer) error {
+	return status.Errorf(codes.Unimplemented, "method HelloManyLanguages not implemented")
 }
 func (*UnimplementedHelloServiceServer) mustEmbedUnimplementedHelloServiceServer() {}
 
@@ -76,6 +119,27 @@ func _HelloService_Hello_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HelloService_HelloManyLanguages_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(HelloManyLanguagesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(HelloServiceServer).HelloManyLanguages(m, &helloServiceHelloManyLanguagesServer{stream})
+}
+
+type HelloService_HelloManyLanguagesServer interface {
+	Send(*HelloManyLanguagesResponse) error
+	grpc.ServerStream
+}
+
+type helloServiceHelloManyLanguagesServer struct {
+	grpc.ServerStream
+}
+
+func (x *helloServiceHelloManyLanguagesServer) Send(m *HelloManyLanguagesResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _HelloService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "hellopb.HelloService",
 	HandlerType: (*HelloServiceServer)(nil),
@@ -85,6 +149,12 @@ var _HelloService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _HelloService_Hello_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "HelloManyLanguages",
+			Handler:       _HelloService_HelloManyLanguages_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "proto/hellopb.proto",
 }

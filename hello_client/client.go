@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/fenriz07/grpc-boilerplate/hello_client/hellopb"
@@ -22,7 +23,8 @@ func main() {
 
 	c := hellopb.NewHelloServiceClient(cc)
 
-	helloUnary(c)
+	//helloUnary(c)
+	helloServerStreaming(c)
 
 }
 
@@ -41,4 +43,35 @@ func helloUnary(c hellopb.HelloServiceClient) {
 	}
 
 	log.Printf("Response Hello %v", res.CustomHello)
+}
+
+func helloServerStreaming(c hellopb.HelloServiceClient) {
+	fmt.Println("invoked helloServerStreaming")
+
+	req := &hellopb.HelloManyLanguagesRequest{
+		Hello: &hellopb.Hello{
+			FirstName: "Servio",
+			Prefix:    "Don",
+		},
+	}
+
+	restStream, err := c.HelloManyLanguages(context.Background(), req)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	for {
+		msg, err := restStream.Recv()
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatal("Error reading stream")
+		}
+
+		log.Printf("Res from HML: %v \n", msg.GetHelloLanguage())
+	}
 }

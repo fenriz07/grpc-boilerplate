@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/fenriz07/grpc-boilerplate/hello_server/hellopb"
 	"google.golang.org/grpc"
@@ -28,6 +29,35 @@ func (*server) Hello(cxt context.Context, req *hellopb.HelloRequest) (*hellopb.H
 
 	return res, nil
 
+}
+
+func (*server) HelloManyLanguages(req *hellopb.HelloManyLanguagesRequest, stream hellopb.HelloService_HelloManyLanguagesServer) error {
+
+	fmt.Printf("HelloManyLanguages time function was invoked %v \n", req)
+
+	langs := [4]string{"Hola", "Hello", "Salut", "Schalom!"}
+
+	firstName := req.GetHello().GetFirstName()
+	prefix := req.GetHello().GetPrefix()
+
+	for _, helloLang := range langs {
+		helloLanguage := helloLang + " " + prefix + " " + firstName
+
+		res := &hellopb.HelloManyLanguagesResponse{
+			HelloLanguage: helloLanguage,
+		}
+
+		err := stream.Send(res)
+
+		if err != nil {
+
+			return err
+		}
+
+		time.Sleep(1000 * time.Millisecond)
+	}
+
+	return nil
 }
 
 func main() {
